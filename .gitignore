@@ -1,0 +1,32 @@
+# Logs
+*.log
+*.err
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Mac system files
+.DS_Store
+
+# Editor directories and files
+.vscode/
+.idea/
+
+# OS-generated files
+Thumbs.db
+
+# Docker volumes or temp mounts (optional, if any)
+tmp/
+volumes/
+
+# MariaDB-related
+*.pid
+*.sock
+
+# SSH files (just in case)
+*.pub
+*.pem
+*.key
+
