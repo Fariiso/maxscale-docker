@@ -27,7 +27,7 @@ maxscale-docker/
 │   └── README.md
 ```
 
-> 💡 **Note:** This layout allows for easy organization of all MaxScale-related services inside the `maxscale` directory, making it cleaner for multi-project repositories.
+> Note:** This layout allows for easy organization of all MaxScale-related services inside the `maxscale` directory, making it cleaner for multi-project repositories.
 
 ---
 
