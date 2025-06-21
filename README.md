@@ -11,19 +11,23 @@ This project demonstrates how to use **MariaDB MaxScale**, **Docker**, and **Doc
 ```
 maxscale-docker/
 │
-├── sql/
-│   ├── master1/
-│   │   └── shard1.sql      # Initialization script for master1
-│   └── master2/
-│       └── shard2.sql      # Initialization script for master2
-│
-├── maxscale.cnf.d/         # MaxScale configuration files
-│
-├── app.py                  # Python script to connect and query MaxScale
-├── docker-compose.yml      # Docker Compose configuration
-├── Dockerfile
-└── README.md
+├── maxscale/
+│   ├── sql/
+│   │   ├── master1/
+│   │   │   └── shard1.sql      # Initialization script for master1
+│   │   └── master2/
+│   │       └── shard2.sql      # Initialization script for master2
+│   │
+│   ├── maxscale.cnf.d/
+│   │   └── example.cnf         # MaxScale configuration
+│   │
+│   ├── app.py                  # Python script to connect and query MaxScale
+│   ├── docker-compose.yml      # Docker Compose configuration
+│   ├── Dockerfile
+│   └── README.md
 ```
+
+> 💡 **Note:** This layout allows for easy organization of all MaxScale-related services inside the `maxscale` directory, making it cleaner for multi-project repositories.
 
 ---
 
@@ -48,10 +52,10 @@ Install the following software on your Ubuntu-based environment:
 
 ```bash
 git clone https://github.com/your-username/maxscale-docker.git
-cd maxscale-docker
+cd maxscale-docker/maxscale
 ```
 
-Make sure your `shard1.sql` and `shard2.sql` files are located in:
+Ensure your shard files exist at:
 
 ```
 sql/master1/shard1.sql
@@ -104,8 +108,6 @@ This connects to MaxScale and executes queries from both shards.
 ---
 
 ## Docker Compose Configuration
-
-Here's a simplified view of your `docker-compose.yml`:
 
 ```yaml
 version: '2'
@@ -179,7 +181,7 @@ docker-compose logs maxscale
 
 - Ensure your `sql/master1` and `sql/master2` folders contain valid `.sql` files.
 - MaxScale configuration must match your actual server setup.
-- Python script assumes `maxuser` and database are correctly configured.
+- Python script assumes `maxuser` and the `all_zipcodes` database are correctly configured.
 
 ---
 
