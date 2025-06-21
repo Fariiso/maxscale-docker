@@ -1,90 +1,195 @@
-# MariaDB MaxScale Docker image
+# MariaDB MaxScale Docker Project
 
-This Docker image runs the latest 2.4 version of MariaDB MaxScale.
+## Overview
 
--	[Travis CI:  
-	![build status badge](https://img.shields.io/travis/mariadb-corporation/maxscale-docker/master.svg)](https://travis-ci.org/mariadb-corporation/maxscale-docker/branches)
+This project demonstrates how to use **MariaDB MaxScale**, **Docker**, and **Docker Compose** to create a sharded database environment with two MariaDB servers and a MaxScale router. A Python script is included to connect to MaxScale, query data from the shards, and print the results.
 
-## Running
-[The MaxScale docker-compose setup](./docker-compose.yml) contains MaxScale
-configured with a three node master-slave cluster. To start it, run the
-following commands in this directory.
+---
+
+## Project Structure
 
 ```
-docker-compose build
-docker-compose up -d
+maxscale-docker/
+│
+├── sql/
+│   ├── master1/
+│   │   └── shard1.sql      # Initialization script for master1
+│   └── master2/
+│       └── shard2.sql      # Initialization script for master2
+│
+├── maxscale.cnf.d/         # MaxScale configuration files
+│
+├── app.py                  # Python script to connect and query MaxScale
+├── docker-compose.yml      # Docker Compose configuration
+├── Dockerfile
+└── README.md
 ```
 
-After MaxScale and the servers have started (takes a few minutes), you can find
-the readwritesplit router on port 4006 and the readconnroute on port 4008. The
-user `maxuser` with the password `maxpwd` can be used to test the cluster.
-Assuming the mariadb client is installed on the host machine:
-```
-$ mysql -umaxuser -pmaxpwd -h 127.0.0.1 -P 4006 test
-Welcome to the MariaDB monitor.  Commands end with ; or \g.
-Your MySQL connection id is 5
-Server version: 10.2.12 2.2.9-maxscale mariadb.org binary distribution
+---
 
-Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+## Requirements
 
-Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+Install the following software on your Ubuntu-based environment:
 
-MySQL [test]>
-```
-You can edit the [`maxscale.cnf.d/example.cnf`](./maxscale.cnf.d/example.cnf)
-file and recreate the MaxScale container to change the configuration.
+- Python 3
+- Docker
+- Docker Compose
+- MariaDB Client (optional for manual testing)
+- MySQL Connector for Python:
+  ```bash
+  sudo apt install mysql-connector-python
+  ```
 
-To stop the containers, execute the following command. Optionally, use the -v
-flag to also remove the volumes.
+---
 
-To run maxctrl in the container to see the status of the cluster:
-```
-$ docker-compose exec maxscale maxctrl list servers
-┌─────────┬─────────┬──────┬─────────────┬─────────────────┬──────────┐
-│ Server  │ Address │ Port │ Connections │ State           │ GTID     │
-├─────────┼─────────┼──────┼─────────────┼─────────────────┼──────────┤
-│ server1 │ master  │ 3306 │ 0           │ Master, Running │ 0-3000-5 │
-├─────────┼─────────┼──────┼─────────────┼─────────────────┼──────────┤
-│ server2 │ slave1  │ 3306 │ 0           │ Slave, Running  │ 0-3000-5 │
-├─────────┼─────────┼──────┼─────────────┼─────────────────┼──────────┤
-│ server3 │ slave2  │ 3306 │ 0           │ Running         │ 0-3000-5 │
-└─────────┴─────────┴──────┴─────────────┴─────────────────┴──────────┘
+## Running the Project
 
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/maxscale-docker.git
+cd maxscale-docker
 ```
 
-The cluster is configured to utilize automatic failover. To illustrate this you can stop the master
-container and watch for maxscale to failover to one of the original slaves and then show it rejoining
-after recovery:
-```
-$ docker-compose stop master
-Stopping maxscaledocker_master_1 ... done
-$ docker-compose exec maxscale maxctrl list servers
-┌─────────┬─────────┬──────┬─────────────┬─────────────────┬─────────────┐
-│ Server  │ Address │ Port │ Connections │ State           │ GTID        │
-├─────────┼─────────┼──────┼─────────────┼─────────────────┼─────────────┤
-│ server1 │ master  │ 3306 │ 0           │ Down            │ 0-3000-5    │
-├─────────┼─────────┼──────┼─────────────┼─────────────────┼─────────────┤
-│ server2 │ slave1  │ 3306 │ 0           │ Master, Running │ 0-3001-7127 │
-├─────────┼─────────┼──────┼─────────────┼─────────────────┼─────────────┤
-│ server3 │ slave2  │ 3306 │ 0           │ Slave, Running  │ 0-3001-7127 │
-└─────────┴─────────┴──────┴─────────────┴─────────────────┴─────────────┘
-$ docker-compose start master
-Starting master ... done
-$ docker-compose exec maxscale maxctrl list servers
-┌─────────┬─────────┬──────┬─────────────┬─────────────────┬─────────────┐
-│ Server  │ Address │ Port │ Connections │ State           │ GTID        │
-├─────────┼─────────┼──────┼─────────────┼─────────────────┼─────────────┤
-│ server1 │ master  │ 3306 │ 0           │ Slave, Running  │ 0-3001-7127 │
-├─────────┼─────────┼──────┼─────────────┼─────────────────┼─────────────┤
-│ server2 │ slave1  │ 3306 │ 0           │ Master, Running │ 0-3001-7127 │
-├─────────┼─────────┼──────┼─────────────┼─────────────────┼─────────────┤
-│ server3 │ slave2  │ 3306 │ 0           │ Slave, Running  │ 0-3001-7127 │
-└─────────┴─────────┴──────┴─────────────┴─────────────────┴─────────────┘
+Make sure your `shard1.sql` and `shard2.sql` files are located in:
 
 ```
+sql/master1/shard1.sql
+sql/master2/shard2.sql
+```
 
-Once complete, to remove the cluster and maxscale containers:
+### 2. Start the Cluster
+
+```bash
+docker compose down -v && docker compose up -d
+```
+
+### 3. Verify the Setup
+
+Check that all containers are running:
+
+```bash
+docker ps
+```
+
+Check MaxScale's routing:
+
+```bash
+docker exec -it maxscale-maxscale-1 maxctrl list servers
+```
+
+Expected output:
 
 ```
-docker-compose down -v
+┌─────────┬─────────┬──────┬─────────────┬──────────────────┬──────┬─────────────────┐
+│ Server  │ Address │ Port │ Connections │ State            │ GTID │ Monitor         │
+├─────────┼─────────┼──────┼─────────────┼──────────────────┼──────┼─────────────────┤
+│ server1 │ master1 │ 3306 │ 0           │ Master, Running  │      │ MariaDBdMonitor │
+│ server2 │ master2 │ 3306 │ 0           │ Master, Running  │      │ MariaDBdMonitor │
+└─────────┴─────────┴──────┴─────────────┴──────────────────┴──────┴─────────────────┘
 ```
+
+---
+
+## Using the Python Script
+
+Run the following:
+
+```bash
+python3 app.py
+```
+
+This connects to MaxScale and executes queries from both shards.
+
+---
+
+## Docker Compose Configuration
+
+Here's a simplified view of your `docker-compose.yml`:
+
+```yaml
+version: '2'
+services:
+  master1:
+    image: mariadb:10.3
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'Y'
+    volumes:
+      - ./sql/master1:/docker-entrypoint-initdb.d
+    command: mysqld --log-bin=mariadb-bin --binlog-format=ROW --server-id=3000
+    ports:
+      - "4001:3306"
+
+  master2:
+    image: mariadb:10.3
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'Y'
+    volumes:
+      - ./sql/master2:/docker-entrypoint-initdb.d
+    command: mysqld --log-bin=mariadb-bin --binlog-format=ROW --server-id=3001
+    ports:
+      - "4002:3306"
+
+  maxscale:
+    image: mariadb/maxscale:latest
+    depends_on:
+      - master1
+      - master2
+    volumes:
+      - ./maxscale.cnf.d:/etc/maxscale.cnf.d
+    ports:
+      - "4006:4006"
+      - "4008:4008"
+      - "8989:8989"
+      - "4000:4000"
+```
+
+---
+
+## Example Output
+
+Sample output from running the Python script:
+
+```
+310512823
+414603701
+78000331
+27252433
+13272241
+162927074
+641553264
+11794999
+```
+
+---
+
+## Troubleshooting
+
+To debug container logs:
+
+```bash
+docker-compose logs master1
+docker-compose logs master2
+docker-compose logs maxscale
+```
+
+---
+
+## Final Notes
+
+- Ensure your `sql/master1` and `sql/master2` folders contain valid `.sql` files.
+- MaxScale configuration must match your actual server setup.
+- Python script assumes `maxuser` and database are correctly configured.
+
+---
+
+## License
+
+[MIT License](LICENSE)
+
+---
+
+## Author
+
+Your Name - [Fariiso](https://github.com/Fariiso)
+
